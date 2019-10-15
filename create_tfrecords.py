@@ -1,7 +1,7 @@
 '''
 filename: create_tfrecords.py
 author:   Alessandro Nicolosi
-website:  https://github.com/alenic
+website:  https://github.com/alenic/autoencoders
 license:  MIT
 '''
 
