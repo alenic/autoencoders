@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 class CNNAutoencoder():
-  def __init__(self, image, conv_depths, encoding_size, training_phase, dropout_rate=0.4):
+  def __init__(self, image, conv_depths, encoding_size, training_phase, dropout_rate=0.0):
     self.image = image
     self.conv_depths = conv_depths.copy()
     self.encoding_size = encoding_size

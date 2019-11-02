@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
   # ============================== Model ===================================================
   if args.model == 'cnn':
-    model = autoenc_models.CNNAutoencoder(input_image, [32, 64, 128], 32, training_phase, dropout_rate=0.4).build()
+    model = autoenc_models.CNNAutoencoder(input_image, [32, 64, 128], 32, training_phase).build()
   elif args.model == 'mlp':
     model = autoenc_models.MLPAutoencoder(input_image, [512, 256, 128], 32, training_phase).build()
   # ============================== Evaluation nodes ========================================
