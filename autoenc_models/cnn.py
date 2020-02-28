@@ -2,18 +2,18 @@ import tensorflow as tf
 
 
 class CNNAutoencoder():
-  def __init__(self, image, conv_depths, encoding_size, training_phase, dropout_rate=0.0):
+  def __init__(self, image, conv_depths, encoding_size, training_phase, variational=False):
     self.image = image
     self.conv_depths = conv_depths.copy()
     self.encoding_size = encoding_size
     self.training_phase = training_phase
-    self.dropout_rate = dropout_rate
+    self.variational = variational
   
   def build(self):
     nodes = {}
     encoded = self.image
     i = 1
-    with tf.variable_scope('simple_cnn'):
+    with tf.variable_scope('Autoencoder'):
       # Encoder
       with tf.variable_scope('encoder'):
         for conv_depth in self.conv_depths:
@@ -27,13 +27,26 @@ class CNNAutoencoder():
         last_encoded_size = encoded.get_shape()
         flatten = tf.layers.flatten(encoded)
         flatten_size = flatten.get_shape()
+
         # Code
-        drop1 = tf.layers.dropout(flatten, self.dropout_rate, training=self.training_phase)
-        code = tf.layers.dense(drop1, self.encoding_size)
-        nodes['code'] = tf.identity(code, name='code')
-        # Decoder
-        drop2 = tf.layers.dropout(code, self.dropout_rate, training=self.training_phase)
-        fc = tf.layers.dense(drop2, flatten_size[1])
+      with tf.variable_scope('code'):
+        if self.variational:
+          code_mean = tf.layers.dense(flatten, self.encoding_size, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
+          code_sigma = tf.layers.dense(flatten, self.encoding_size, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
+          noise = tf.random_normal(tf.shape(code_sigma), dtype=tf.float32)
+          code = code_mean + code_sigma*noise
+        else:
+          code = tf.layers.dense(flatten, self.encoding_size)
+        
+      nodes['code'] = tf.identity(code, name='code')
+
+      if self.variational:
+        nodes['code_mean'] = tf.identity(code_mean, name='code_mean')
+        nodes['code_sigma'] = tf.identity(code_sigma, name='code_sigma')
+
+      # Decoder
+      with tf.variable_scope('decoder'):
+        fc = tf.layers.dense(nodes['code'], flatten_size[1])
         reshaped = tf.reshape(fc, [-1]+ last_encoded_size.as_list()[1:])
 
         rev = self.conv_depths
@@ -52,4 +65,10 @@ class CNNAutoencoder():
         decoded = tf.nn.relu(decoded)
 
     nodes['decoded'] = tf.identity(decoded, name='decoded')
+    nodes['code'] = tf.identity(code, name='code')
+
+    if self.variational:
+      nodes['code_mean'] = tf.identity(code_mean, name='code_mean')
+      nodes['code_sigma'] = tf.identity(code_sigma, name='code_sigma')
+    
     return nodes

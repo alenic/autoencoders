@@ -8,9 +8,6 @@ def augment_tf_image(image, image_size):
 
   # Constrast
   image = tf.image.random_contrast(image, 0.7, 1.4)
-  
-  # Crop and resize
-  image = tf.random_crop(image, [tf.shape(image)[0], int(image_size[1]*0.85), int(image_size[0]*0.85), 3])
 
   # Flip
   image = tf.image.random_flip_left_right(image)
@@ -19,7 +16,7 @@ def augment_tf_image(image, image_size):
   max_angle = 15.0 * np.pi / 180.0
   rot_angle = 2.0*tf.random_uniform([])*max_angle-max_angle
   image = tf.contrib.image.rotate(image, rot_angle)
-  image = tf.image.resize_images(image, image_size)
+
   return image
 
 
@@ -32,8 +29,9 @@ def parse_function_train(example, image_size, augment=False):
 
   if augment:
     decoded_img = augment_tf_image(decoded_img, image_size)
-  else:
-    decoded_img = tf.image.resize_images(decoded_img, image_size)
+  
+  
+  decoded_img = tf.image.resize_images(decoded_img, image_size)
 
   
   decoded_img = tf.cast(decoded_img, tf.float32) / 255.0
@@ -47,9 +45,10 @@ def parse_function_val(example, image_size, augment=False):
 def get_train_iterator(tfrecord_list, image_size, batch_size, augment=False):
   train_dataset = tf.data.TFRecordDataset(tfrecord_list)
   train_dataset = train_dataset.shuffle(buffer_size=batch_size*2000)
+  train_dataset = train_dataset.repeat()
   train_dataset = train_dataset.apply(tf.contrib.data.map_and_batch(lambda x: parse_function_train(x, image_size, augment), batch_size=batch_size))
   train_dataset = train_dataset.prefetch(buffer_size=batch_size)
-  train_iterator = train_dataset.make_initializable_iterator()
+  train_iterator = train_dataset.make_one_shot_iterator()
   train_next_batch = train_iterator.get_next()
   return train_iterator, train_next_batch
 
